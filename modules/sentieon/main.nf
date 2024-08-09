@@ -305,6 +305,7 @@ process MERGE_DEDUP_CRAM {
 
 	output:
 		tuple val(id), path("${id}_merged_dedup.cram"), path("${id}_merged_dedup.cram.crai"), path("${id}_merged_dedup.cram.bai")
+		
 
 	script:
 		cram = crams.sort(false) { a, b -> a.getBaseName().tokenize("_")[0] as Integer <=> b.getBaseName().tokenize("_")[0] as Integer } .join(' -i ')
@@ -315,6 +316,25 @@ process MERGE_DEDUP_CRAM {
 		-i ${cram} \
 		--cram_write_options version=3.0 \
 		-o ${id}_merged_dedup.cram --mergemode 10
+	"""
+}
+
+process CRAM_TO_BAM {
+	tag "$id"
+	label "process_high"
+	container = '/fs1/resources/containers/wgs_active.sif'
+
+	input:
+		path(params.genome_file)
+		tuple 	val(id), path(cram), path(crai), path(bai)
+
+	output:
+		tuple val(id), path("${id}_merged_dedup.bam"), path("${id}_merged_dedup.bam.bai")
+		
+	script:
+	"""
+	samtools view -b  -T ${params.genome_file} -o ${id}_merged_dedup.bam -@ ${task.cpus} ${cram}
+	samtools index -@ ${task.cpus} ${id}_merged_dedup.bam
 	"""
 }
 
@@ -778,6 +798,7 @@ process  SPLIT_NORMALIZE {
 
 
 	"""
+	tabix -f ${vcf}
 	vcfbreakmulti ${vcf} > ${group}.multibreak.vcf
 	bcftools norm -m-both -c w -O v -f  ${params.genome_file} -o ${group}.norm.vcf ${group}.multibreak.vcf
 	vcfstreamsort ${group}.norm.vcf | vcfuniq > ${group}.norm.uniq.vcf

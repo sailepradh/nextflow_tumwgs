@@ -51,6 +51,7 @@ include {   COPY_FASTQ;
             BQSR;
             MERGE_BQSR;
             MERGE_DEDUP_CRAM;
+            CRAM_TO_BAM;
             QC_TO_CDM;
             TNSCOPE;
             MERGE_VCF;
@@ -131,9 +132,11 @@ workflow sentieon_workflow {
         MERGE_BQSR (    BQSR.out.groupTuple()   )
         MERGE_DEDUP_CRAM (  params.genome_file,
                             DEDUP.out[0].groupTuple()   )
+        CRAM_TO_BAM (   params.genome_file,
+                        MERGE_DEDUP_CRAM.out )
 
     emit:
-        bam = BWA_MERGE_SHARDS.out
+        bam = CRAM_TO_BAM.out
         cram = MERGE_DEDUP_CRAM.out
         dedup = DEDUP.out[0]
         bqsr = MERGE_BQSR.out
@@ -220,7 +223,7 @@ workflow snv_calling_workflow {
     main:
         bed             =    beds.combine(metaId.groupTuple())
         bamMerged       =    metaId.flatten().first().combine(bam).groupTuple()
-        all             =   bamMerged.combine(bed)
+        all             =    bamMerged.combine(bed)
 
         FREEBAYES ( mode, 
                     all, 
@@ -460,15 +463,18 @@ workflow {
                             tnscope_workflow.out.vcf,
                             fastq_sharded,
                             metaId  )
-     sv_calling_workflow (   mode,
+    sv_calling_workflow (   mode,
                             sentieon_workflow.out.cram,
                             metaId)
     cnv_calling_workflow (  gatkId,
                             sentieon_workflow.out.cram    )
+    gens_tum_workflow ( cnv_calling_workflow.out.tumCov, 
+                        dnascope_tum_workflow.out.vcf, 
+                        metaCoyote )                   
 
-    gens_tum_workflow (cnv_calling_workflow.out.tumCov,        dnascope_tum_workflow.out.vcf, metaCoyote )                   
-
-    gens_nor_workflow ( cnv_calling_workflow.out.norCov,            dnascope_nor_workflow.out.vcf, metaCoyote ) 
+    gens_nor_workflow ( cnv_calling_workflow.out.norCov,
+                        dnascope_nor_workflow.out.vcf, 
+                        metaCoyote ) 
 
     snv_calling_workflow.out.vcf.view()
     sv_calling_workflow.out.vcf.view()
@@ -477,9 +483,7 @@ workflow {
                         snv_calling_workflow.out.vcf,
                         sv_calling_workflow.out.vcf,
                         cnv_calling_workflow.out.vcf,
-                        cnv_calling_workflow.out.tumplot )    
-
-    
+                        cnv_calling_workflow.out.tumplot )        
 }
 
 /* Report the workflow */
