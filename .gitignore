@@ -8,9 +8,27 @@ work/
 *.vcf.gz
 *.fq.gz
 __test/
-<<<<<<< HEAD
 main_test.nf*
+*~
+\#*\#
+.nextflow*
+work/
+*.sif
+*.png
+data/
+test_run_*
+test.timeline*
+test.dag*
+git.hash
+*.csv
+TEST_CMD.sh
+Code_style.md
+TODO.md
+*_test.config
+logs/
+bugs/
+.venv
+.env
+venv
+env
 
-=======
-.shards_file/*
->>>>>>> 821f22f5c08d7d09f4bc79bd587d9ee649d09868

@@ -119,7 +119,7 @@ sub vcfstr {
 
     # Generate and print INFO field
     for my $info_key (@{$v->{INFO_order}}) {
-	push @all_info, $info_key."=".$v->{INFO}->{$info_key};
+		push @all_info, $info_key."=".$v->{INFO}->{$info_key};
     }
     print join(";", @all_info)."\t";
 
