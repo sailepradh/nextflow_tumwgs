@@ -1236,7 +1236,7 @@ process GENERATE_GENS_DATA {
 	"""
 	generate_gens_data.pl ${cov_stand} ${gvcf} ${id} ${params.GENS_GNOMAD}
 
-	echo "gens load sample --sample-id ${id}_${assay} --genome-build 38 --baf ${params.gens_accessdir}/${id}.baf.bed.gz --coverage ${params.gens_accessdir}/${id}.cov.bed.gz --overview-json ${params.gens_accessdir}/${id}.overview.json.gz" > ${id}_${assay}.gens 
+	echo "gens load sample --sample-id ${id}_${assay} --case-id ${g} --genome-build 38 --baf ${params.gens_accessdir}/${id}.baf.bed.gz --coverage ${params.gens_accessdir}/${id}.cov.bed.gz --overview-json ${params.gens_accessdir}/${id}.overview.json.gz" > ${id}_${assay}.gens 
 	"""
 }
 
@@ -1271,7 +1271,7 @@ process GENERATE_GENS_DATA_NOR {
 	"""
 	generate_gens_data.pl ${cov_stand} ${gvcf} ${id} ${params.GENS_GNOMAD}
 	
-	echo "gens load sample --sample-id ${id}_${assay} --genome-build 38 --baf ${params.gens_accessdir}/${id}.baf.bed.gz --coverage ${params.gens_accessdir}/${id}.cov.bed.gz --overview-json ${params.gens_accessdir}/${id}.overview.json.gz" > ${id}_${assay}.gens 
+	echo "gens load sample --sample-id ${id}_${assay} --case-id ${g} --genome-build 38 --baf ${params.gens_accessdir}/${id}.baf.bed.gz --coverage ${params.gens_accessdir}/${id}.cov.bed.gz --overview-json ${params.gens_accessdir}/${id}.overview.json.gz" > ${id}_${assay}.gens 
 	"""
 }
 
