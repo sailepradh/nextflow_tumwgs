@@ -1294,8 +1294,7 @@ process COYOTE {
 	if( lims_id.size() >= 2 ) {
 		tumor_idx = type.findIndexOf{ it == 'tumor' || it == 'T' }
 		normal_idx = type.findIndexOf{ it == 'normal' || it == 'N' }
-		
-		assay1 = assay[0]
+
 		// def gens_tumor = ${sampleID[tumor_idx]} + ${assay}
 		// def gens_normal = ${sampleID[normal_idx]} + ${assay}
 
@@ -1316,7 +1315,6 @@ process COYOTE {
 	else {
 		tumor_idx = type.findIndexOf{ it == 'tumor' || it == 'T' }
 
-		assay1 = assay[0] 
 		// def gens_tumor = ${sampleID[tumor_idx]} + ${assay}
 		
 		"""
@@ -1328,7 +1326,7 @@ process COYOTE {
 			--cnvprofile /access/tumwgs/cov/${cnvplot} \\
 			--clarity-sample-id ${lims_id[tumor_idx]} \\
 			--build 38 \\
-        	--gens ${sampleID[tumor_idx]}_${assay} \\
+        	--gens ${sampleID[tumor_idx]} \\
 			--clarity-pool-id ${pool_id[tumor_idx]}" > ${group}.coyote_wgs
 
 		"""
