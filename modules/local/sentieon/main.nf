@@ -412,3 +412,47 @@ process CRAM_TO_BAM {
         """
 
 }
+
+process DNASCOPE {
+    label 'process_alot'
+    label 'scratch'
+    label 'stage'
+    tag '${meta.id}'
+
+    input:
+        tuple val(group), val(meta), file(cram), file(crai), file(bai)
+
+    output:
+        tuple val(group), val(meta), file("${out_vcf}"), file("${out_vcf}.tbi"),        emit: dnascope_vcf
+        path "versions.yml",                                                            emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
+
+    script:
+        def args    = task.ext.args     ?: ""   // reference and common arguments for driver
+        def args2   = task.ext.args2    ?: ""   // algo specific arguments
+        def args3   = task.ext.args3    ?: ""   // algo specific arguments
+        def prefix  = task.ext.prefix   ?: "${meta.id}"
+        out_vcf     = meta.id+"."+meta.type+".dnascope.vcf.gz"
+
+        """
+        sentieon driver -t ${task.cpus} $args -i $cram $args2 --algo DNAscope $args3 $out_vcf
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            sentieon: \$(echo \$(sentieon driver --version 2>&1) | sed -e "s/sentieon-genomics-//g")
+        END_VERSIONS
+        """
+
+    stub:
+        out_vcf = meta.id+"."+meta.type+".dnascope.vcf.gz"
+        """
+        touch ${out_vcf} ${out_vcf}.tbi
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            sentieon: \$(echo \$(sentieon driver --version 2>&1) | sed -e "s/sentieon-genomics-//g")
+        END_VERSIONS
+        """
+}

@@ -18,8 +18,10 @@ process CONCATENATE_VCFS {
         """
         vcf-concat $vcfs | vcf-sort -c | gzip -c > ${vc}.concat.vcf.gz
         vt decompose ${vc}.concat.vcf.gz -o ${vc}.decomposed.vcf.gz
-        vt normalize ${vc}.decomposed.vcf.gz $args | vt uniq - -o ${prefix}_${vc}.vcf.gz
-
+        vt index ${vc}.decomposed.vcf.gz
+        vt sort -m chrom ${vc}.decomposed.vcf.gz -o ${vc}.decomposed.sorted.vcf.gz
+        vt normalize ${vc}.decomposed.sorted.vcf.gz $args | vt uniq - -o ${prefix}_${vc}.vcf.gz
+        
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             vcftools: \$(echo \$(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')
@@ -27,7 +29,7 @@ process CONCATENATE_VCFS {
             vt-normalize: \$(echo \$(vt normalize 2>&1) | sed 's/.*normalize v//; s/ .*//')
         END_VERSIONS
         """
-
+        
     stub:
         def prefix = task.ext.prefix ?: "${group}"
         """

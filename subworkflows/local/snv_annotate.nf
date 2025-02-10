@@ -3,6 +3,8 @@
 include { PON_FILTER               } from '../../modules/local/filters/main'
 include { ANNOTATE_VEP             } from '../../modules/local/filters/main'
 include { FILTER_PANEL             } from '../../modules/local/filters/main'
+include { FIX_VEP                   } from '../../modules/local/filters/main'
+include { POST_ANNOTATION_FILTERS  } from '../../modules/local/filters/main'
 
 workflow SNV_ANNOTATE {
     take: 
@@ -23,8 +25,15 @@ workflow SNV_ANNOTATE {
         FILTER_PANEL { ANNOTATE_VEP.out.vcf_vep }
         ch_versions = ch_versions.mix(FILTER_PANEL.out.versions)
 
-    emit:
-        annotated_variants  =   FILTER_PANEL.out.vcf_panel    // channel: [ val(group), val(vc), file(vcf.gz) ]
-        versions            =   ch_versions                             // channel: [ file(versions) ]
+        FIX_VEP { FILTER_PANEL.out.vcf_panel }
+        ch_versions = ch_versions.mix(FIX_VEP.out.versions)
 
+        // add filters and mark duplicates
+        POST_ANNOTATION_FILTERS { FIX_VEP.out.fixed_vcf }
+        ch_versions = ch_versions.mix(POST_ANNOTATION_FILTERS.out.versions)
+
+    emit:
+        annotated_variants  =   FILTER_PANEL.out.vcf_panel                      // channel: [ val(group), val(vc), file(vcf.gz) ]
+        finished_vcf        =   POST_ANNOTATION_FILTERS.out.filtered_vcf        // channel: [ val(group), val(vc), file(vcf.gz) ]
+        versions            =   ch_versions                                     // channel: [ file(versions) ]
 }

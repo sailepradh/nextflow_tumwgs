@@ -8,6 +8,8 @@ include { SNV_CALLING                   } from '../subworkflows/local/snv_callin
 include { SNV_ANNOTATE                  } from '../subworkflows/local/snv_annotate'
 include { CNV_CALLING                   } from '../subworkflows/local/cnv_calling_wgs'
 include { SV_CALLING                    } from '../subworkflows/local/sv_calling'
+include { VISUALIZE                     } from '../subworkflows/local/visualize'
+include { ADD_TO_DB                     } from '../subworkflows/local/add_to_db'
 
 
 csv = file(params.csv)
@@ -51,7 +53,7 @@ workflow SWGP_COMMON {
 
     SNV_CALLING ( 
         ch_mapped.bam_bqsr.groupTuple(),
-        ch_mapped.cram_bqsr.groupTuple(),
+        ch_mapped.cram_dedup,
         ch_beds,
         CHECK_INPUT.out.meta,
     )
@@ -74,11 +76,30 @@ workflow SWGP_COMMON {
     )
     .set { ch_cnvcalled }
     ch_versions = ch_versions.mix(ch_cnvcalled.versions)
-
-   SV_CALLING ( ch_mapped.cram_dedup.groupTuple(), CHECK_INPUT.out.meta ).set { ch_svcalled }
-   ch_versions = ch_versions.mix(ch_svcalled.versions)
-
-
+    
+    
+    SV_CALLING (
+                ch_mapped.cram_dedup.groupTuple(), 
+                CHECK_INPUT.out.meta,
+    )
+    .set { ch_svcalled }
+    ch_versions = ch_versions.mix(ch_svcalled.versions)
+    
+    VISUALIZE (
+                ch_vcf.dnascope_vcf, 
+                ch_cnvcalled.count,
+    )
+    .set { ch_visualize }
+    ch_versions = ch_versions.mix(ch_visualize.versions)
+    
+    ADD_TO_DB (
+        ch_vcf_anno.finished_vcf,
+        ch_cnvcalled.vcf,
+        ch_svcalled.fusions,
+        ch_cnvcalled.tum_plot,
+    )
+    
+    
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml'),
         CHECK_INPUT.out.meta

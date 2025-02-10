@@ -3,6 +3,7 @@
 include { FREEBAYES                } from '../../modules/local/freebayes/main'
 include { VARDICT                  } from '../../modules/local/vardict/main'
 include { TNSCOPE                  } from '../../modules/local/sentieon/main'
+include { DNASCOPE                 } from '../../modules/local/sentieon/main'
 include { CONCATENATE_VCFS         } from '../../modules/local/concatenate_vcfs/main'
 include { AGGREGATE_VCFS           } from '../../modules/local/concatenate_vcfs/main'
 
@@ -45,9 +46,13 @@ workflow SNV_CALLING {
         AGGREGATE_VCFS.out.vcf_concat.view()
         ch_versions         = ch_versions.mix(AGGREGATE_VCFS.out.versions.first())
 
+        DNASCOPE { cram_bqsr.groupTuple(by:[0,1])}
+        ch_versions         = ch_versions.mix(DNASCOPE.out.versions)
+
     emit:
-        concat_vcfs =   CONCATENATE_VCFS.out.concatenated_vcfs  // channel: [ val(group), val(vc), file(vcf.gz) ]
-        agg_vcf     =   AGGREGATE_VCFS.out.vcf_concat           // channel: [ val(group), val(meta), file(agg.vcf) ]
-        versions    =   ch_versions                             // channel: [ file(versions) ]
+        concat_vcfs     =   CONCATENATE_VCFS.out.concatenated_vcfs  // channel: [ val(group), val(vc), file(vcf.gz) ]
+        agg_vcf         =   AGGREGATE_VCFS.out.vcf_concat           // channel: [ val(group), val(meta), file(agg.vcf) ]
+        dnascope_vcf    =   DNASCOPE.out.dnascope_vcf               // channel : [ val(group), val(meta), file(vcf), file(vcf.gz) ]
+        versions        =   ch_versions                             // channel: [ file(versions) ]
 
 }

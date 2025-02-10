@@ -63,7 +63,7 @@ process ANNOTATE_VEP {
         def prefix = task.ext.prefix ?: "${vcf.baseName}"
 
         """
-        vep -i ${vcf} -o ${prefix}".vep.vcf" --fork ${task.cpus} $args
+        vep -i ${vcf} -o ${prefix}.vep.vcf --fork ${task.cpus} $args
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -75,7 +75,7 @@ process ANNOTATE_VEP {
         def prefix = task.ext.prefix ?: "${vcf.baseName}"
 
         """
-        touch ${prefix}".vep.vcf"
+        touch ${prefix}.vep.vcf
         echo $args
 
         cat <<-END_VERSIONS > versions.yml
@@ -782,7 +782,6 @@ process OVERLAP_GENES {
         """
 }
 
-
 process FILTER_CNVS_PANEL {
     label "process_single"
     tag "$group"
@@ -791,7 +790,7 @@ process FILTER_CNVS_PANEL {
         tuple val(group), val(meta), file(bed) 
 
     output:
-        tuple val(group), val(meta), file("*.cnv.annotated.panel.bed"),   emit: vcf_panel
+        tuple val(group), file("*.cnv.annotated.panel.bed"),            emit: vcf_panel
         path "versions.yml",                                            emit: versions
 
     
@@ -835,7 +834,7 @@ process FILTER_FUSIONS_PANEL {
         tuple val(group), val(meta), file(vcf) 
 
     output:
-        tuple val(group), val(meta), file("*.manta.fusions.vcf"),       emit: sv_panel
+        tuple val(group),  file("*.manta.fusions.vcf"),                 emit: sv_panel
         path "versions.yml",                                            emit: versions
 
     
@@ -868,3 +867,111 @@ process FILTER_FUSIONS_PANEL {
         END_VERSIONS
         """
 }
+
+
+process FIX_VEP {
+    label "process_single"
+    tag "$group"
+
+    input:
+        tuple val(group), val(meta), file(vcf) // from vcf_germline.join(meta_germline.groupTuple())
+
+        
+    output:
+        tuple val(group), val(meta), file("*.agg.pon.vep.fix.vcf"),             emit: fixed_vcf
+        path "versions.yml",                                                    emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
+
+    script:
+        def args = task.ext.args ?: ''
+        def prefix = task.ext.prefix ?: "${group}"
+        if( meta.id.size() >= 2 ) {
+            tumor_idx = meta.type.findIndexOf{ it == 'tumor' || it == 'T' }
+            normal_idx = meta.type.findIndexOf{ it == 'normal' || it == 'N' }
+            """
+            fix_vep_gnomad.pl $vcf > ${prefix}.agg.pon.vep.fix.vcf
+
+            cat <<-END_VERSIONS > versions.yml
+            "${task.process}":
+                perl: \$( echo \$(perl -v 2>&1) |sed 's/.*(v//; s/).*//')
+            END_VERSIONS
+            """
+        }
+        else if( meta.id.size() == 1 ) {
+            """
+            fix_vep_gnomad.pl $vcf > ${prefix}.agg.pon.vep.fix.vcf
+
+            cat <<-END_VERSIONS > versions.yml
+            "${task.process}":
+                perl: \$( echo \$(perl -v 2>&1) |sed 's/.*(v//; s/).*//')
+            END_VERSIONS
+            """
+        }
+
+    stub:
+        def prefix = task.ext.prefix ?: "${group}"
+        if( meta.id.size() >= 2 ) {
+            tumor_idx = meta.type.findIndexOf{ it == 'tumor' || it == 'T' }
+            normal_idx = meta.type.findIndexOf{ it == 'normal' || it == 'N' }
+            """
+            echo --tumor-id ${meta.id[tumor_idx]} --normal-id ${meta.id[normal_idx]}
+            touch ${prefix}p.agg.pon.vep.fix.vcf
+
+            cat <<-END_VERSIONS > versions.yml
+            "${task.process}":
+                perl: \$( echo \$(perl -v 2>&1) |sed 's/.*(v//; s/).*//')
+            END_VERSIONS
+            """
+        }
+        else if( meta.id.size() == 1 ) {
+            """
+            echo ${meta.id[0]}
+            touch ${prefix}.agg.pon.vep.fix.vcf
+
+            cat <<-END_VERSIONS > versions.yml
+            "${task.process}":
+                perl: \$( echo \$(perl -v 2>&1) |sed 's/.*(v//; s/).*//')
+            END_VERSIONS
+            """
+        }
+}
+
+process POST_ANNOTATION_FILTERS {
+    label "process_single"
+    tag "$group"
+
+    input:
+        tuple val(group), val(meta), file(vcf)
+        
+    output:
+        tuple val(group), val(meta), file("*.final.filtered.vcf"),              emit: filtered_vcf
+        path "versions.yml",                                                    emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
+
+    script:
+        def prefix  = task.ext.prefix   ?: "${group}"
+        def args    = task.ext.args     ?: ''
+        """
+        post_annotation_filtering.py --vcf $vcf $args > ${prefix}.final.filtered.vcf
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python --version 2>&1| sed -e 's/Python //g')
+        END_VERSIONS
+        """
+    stub:
+        def prefix  = task.ext.prefix ?: "${group}"
+        def args    = task.ext.args     ?: ''
+        """
+        touch ${prefix}.final.filtered.vcf
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python --version 2>&1| sed -e 's/Python //g')
+        END_VERSIONS
+        """
+        
+}
+

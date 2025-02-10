@@ -1,8 +1,11 @@
 #!/usr/bin/env nextflow
 
 include { MANTA                                } from '../../modules/local/manta/main'
+include { MANTA_SV                             } from '../../modules/local/manta/main'
 include { SNPEFF                               } from '../../modules/local/snpeff/main'
+include { SNPEFF_SV_ANN                        } from '../../modules/local/snpeff/main'
 include { FILTER_FUSIONS_PANEL                 } from '../../modules/local/filters/main'
+
 
 workflow SV_CALLING {
     take: 
@@ -22,10 +25,17 @@ workflow SV_CALLING {
         SNPEFF { MANTA.out.manta_vcf_tumor }
         ch_versions = ch_versions.mix(SNPEFF.out.versions)
 
+        MANTA_SV { MANTA.out.manta_vcf_tumor }
+        ch_versions = ch_versions.mix(MANTA_SV.out.versions)
+        
+        SNPEFF_SV_ANN { MANTA_SV.out.inv_vcf_tumor }
+        ch_versions = ch_versions.mix(SNPEFF_SV_ANN.out.versions)
+
         FILTER_FUSIONS_PANEL { SNPEFF.out.snpeff_vcf }
         ch_versions = ch_versions.mix( FILTER_FUSIONS_PANEL.out.versions)
 
     emit:
+        fusions     =   FILTER_FUSIONS_PANEL.out.sv_panel
         versions    =   ch_versions                     // channel: [ file(versions) ]
 
 }

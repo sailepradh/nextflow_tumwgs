@@ -6,9 +6,9 @@ process MANTA {
         tuple val(group), val(meta), file(cram), file(crai), file(bai)
 
     output:
-        tuple val(group),val(meta), file("${prefix}_manta.vcf"),                  emit: manta_vcf_tumor
-        tuple val(group),val(meta), file("${prefix2}_manta.vcf"),                 emit: manta_vcf_normal
-        path "versions.yml",                                                      emit: versions
+        tuple val(group),val(meta), file("${prefix}_manta.vcf"),                emit: manta_vcf_tumor
+        tuple val(group),val(meta), file("${prefix2}_manta.vcf"),               emit: manta_vcf_normal
+        path "versions.yml",                                                    emit: versions
         
 
     when:
@@ -110,5 +110,51 @@ process MANTA {
         }
 
 }
+
+
+process MANTA_SV {
+    label 'process_medium'
+    tag "${meta.id}"
+    
+    input:
+        tuple val(group), val(meta), file(vcf)
+
+    output:
+        tuple val(group),val(meta), file("*.manta.SV.pass.vcf"),                emit: inv_vcf_tumor
+        path "versions.yml",                                                    emit: versions
+        
+    when:
+        task.ext.when == null || task.ext.when
+
+    script:
+        def args        = task.ext.args ?: ''
+        def prefix      = task.ext.prefix ?: "${group}"
+    
+        """
+        convertInversion.py $args ${vcf} > ${prefix}.manta.all.vcf
+        grep -e \$'\\tPASS\\t' -e '^#' ${prefix}.manta.all.vcf |grep -Ev 'GL000|hs37d5' > ${prefix}.manta.SV.pass.vcf
+    
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            manta: \$(configManta.py --version)
+            python: \$(python --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS    
+        """
+    stub:
+        def args        = task.ext.args ?: ''
+        def prefix      = task.ext.prefix ?: "${group}" 
+        """
+        touch ${prefix}.manta.SV.pass.vcf
+        echo ${args}
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            manta: \$(configManta.py --version)
+            python: \$(python --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS 
+        """
+}
+
+
 
 

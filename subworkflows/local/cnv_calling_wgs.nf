@@ -31,13 +31,17 @@ workflow CNV_CALLING {
         GATKCOV_CALL_GERMLINE { GATKCOV_BAF.out.gatk_baf.join(GATKCOV_COUNT.out.gatk_count,by:[0,1]).groupTuple() }
         ch_versions = ch_versions.mix(GATKCOV_CALL.out.versions)
 
-        OVERLAP_GENES { GATKCOV_CALL.out.gatcov_called }
+        OVERLAP_GENES { GATKCOV_CALL.out.gatkcov_called }
         ch_versions = ch_versions.mix(OVERLAP_GENES.out.versions)
 
         FILTER_CNVS_PANEL { OVERLAP_GENES.out.annotated_bed }
         ch_versions = ch_versions.mix(OVERLAP_GENES.out.versions)
 
     emit:
+        tum_plot    =   GATKCOV_CALL.out.gatkcov_plot
+        norm_plot   =   GATKCOV_CALL_GERMLINE.out.gatkcov_germlline_plot
+        count       =   GATKCOV_COUNT.out.gatk_count
+        vcf         =   FILTER_CNVS_PANEL.out.vcf_panel
         versions    =   ch_versions                     // channel: [ file(versions) ]
 
 }

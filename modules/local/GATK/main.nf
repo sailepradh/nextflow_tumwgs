@@ -153,8 +153,8 @@ process GATKCOV_CALL {
         tuple val(group), val(meta), file(allele), file(stdCR), file(denoised)
 
     output:
-        tuple val(group), val(meta), file("*.called.seg"),                  emit: gatcov_called
-        tuple val(group), file("*.modeled.png"),                            emit: gatcov_plot
+        tuple val(group), val(meta), file("*.called.seg"),                  emit: gatkcov_called
+        tuple val(group), file("*.modeled.png"),                            emit: gatkcov_plot
         path "versions.yml",                                                emit: versions
 
     when:
@@ -242,8 +242,8 @@ process GATKCOV_CALL_GERMLINE {
         tuple val(group), val(meta), file(allele), file(stdCR), file(denoised)
 
     output:
-        tuple val(group), val(meta), file("*.called.seg"),                  emit: gatcov_germline_called
-        tuple val(group), file("*.modeled.png"),                            emit: gatcov_germlline_plot
+        tuple val(group), val(meta), file("*.called.seg"),                  emit: gatkcov_germline_called
+        tuple val(group), file("*.modeled.png"),                            emit: gatkcov_germlline_plot
         path "versions.yml",                                                emit: versions
 
     when:
